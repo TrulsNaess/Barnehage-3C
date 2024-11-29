@@ -57,5 +57,3 @@ def initiate_db(db_name):
     """
 
 initiate_db("kgdata.xlsx")
-
-
