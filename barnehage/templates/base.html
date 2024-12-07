@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>{% block title %} {% endblock %} - OBLIG5</title>
     <style>
-    
         body {
           margin-left: 20px;
           margin-right: 20px;
@@ -56,7 +55,6 @@
             right: 0;
         }
 
-
         .title a {
             color: #0000EE;
             text-decoration: none;
@@ -67,7 +65,6 @@
             font-size: 1em;
             margin-left: 30px;
             margin-right: 20px;
-            
         }
         
         .center {
@@ -76,18 +73,17 @@
           margin-right: auto;
           width: 50%;
         }
-
     </style>
 </head>
 <body>
-    
     <nav>
         <span>MENY:</span>
         <a href="{{ url_for('index') }}">Hjem</a>
         <a href="{{ url_for('behandle') }}">Søk</a>
         <a href="{{ url_for('barnehager') }}">Barnehager</a>
-
-        <a href="{{ url_for('commit') }}" style="float: right;"> commit</a>
+        <a href="{{ url_for('statistikk') }}">Statistikk</a>
+        <a href="{{ url_for('commit') }}" style="float: right;">commit</a>
+        <a href="{{ url_for('soknader') }}">Søknader</a> <!-- Nytt meny-element -->
         <span style="float: right">ADMIN:</span>
     </nav>
     <hr>
@@ -96,4 +92,3 @@
     </div>
 </body>
 </html>
-

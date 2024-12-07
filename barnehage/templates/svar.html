@@ -1,11 +1,33 @@
 {% extends 'base.html' %}
 
 {% block content %}
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    h1 {
+        color: #333;
+    }
+    p {
+        font-size: 18px;
+    }
+    ul {
+        list-style-type: none;
+        padding: 0;
+    }
+    li {
+        background: #f9f9f9;
+        margin: 5px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+  </style>
+
   <h1>Status på søknaden</h1>
   
-  <p>Status: {{ status }}</p>
+  <p><strong>Status:</strong> {{ status }}</p>
 
-  <h2>Barnehager:</h2>
   <ul>
     {% for barnehage in barnehager %}
       <li>{{ barnehage.barnehage_navn }} - Ledige plasser: {{ barnehage.barnehage_ledige_plasser }}</li>

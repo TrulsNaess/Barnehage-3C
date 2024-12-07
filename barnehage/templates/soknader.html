@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <title>Søknader</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Alle Søknader</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Søknadsnummer</th>
+                <th>Navn Foresatt</th>
+                <th>Adresse</th>
+                <th>Prioritert Barnehage</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for soknad in soknader %}
+                <tr>
+                    <td>{{ soknad['sok_id'] }}</td>
+                    <td>{{ soknad['foresatt_1'] }}</td>
+                    <td>{{ soknad['adresse_forelder_1'] }}</td>
+                    <td>{{ soknad['barnehager_prioritert'] }}</td>
+                    <td>{{ soknad['status'] }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

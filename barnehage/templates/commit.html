@@ -1,5 +1,58 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Commit Data{% endblock %}
 
 {% block content %}
-<p>Alle endringene er skrevet til dbexcel!</p>
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <title>Commit Data</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <h1>All Data</h1>
+    {% for sheet_name, records in data.items() %}
+        <h2>{{ sheet_name }}</h2>
+        <table>
+            <thead>
+                <tr>
+                    {% for column in records[0].keys() if column != 'Unnamed: 0' %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                    <tr>
+                        {% for key, value in record.items() if key != 'Unnamed: 0' %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+</body>
+</html>
 {% endblock %}

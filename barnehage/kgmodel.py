@@ -25,8 +25,8 @@ Index: []
 """
 @dataclass
 class Barn:
-    barn_id : int
-    barn_pnr : str
+    barn_id: int
+    barn_pnr: str
     
 """
 Index(['barnehage_id', 'barnehage_navn', 'barnehage_antall_plasser',
@@ -50,19 +50,17 @@ Index: []
 @dataclass
 class Soknad:
     sok_id: int
-    foresatt_1: Foresatt
-    foresatt_2: Foresatt
-    barn_1: Barn
+    foresatt_1: int
+    foresatt_2: int
+    barn_1: int
     fr_barnevern: str
     fr_sykd_familie: str
     fr_sykd_barn: str
     fr_annet: str
     barnehager_prioritert: str
     sosken__i_barnehagen: str
-    tidspunkt_oppstart: str
+    tidspunkt_for_oppstart: str
     brutto_inntekt: int
-    
-    
 
 
 """
@@ -78,6 +76,4 @@ representation of the object by converting that object to a string."
 Referanser
 [1] https://docs.python.org/3/library/dataclasses.html
 [2] https://www.geeksforgeeks.org/python-repr-function/
-
-
 """

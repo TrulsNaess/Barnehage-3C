@@ -4,22 +4,10 @@ import numpy as np
 from dbexcel import *
 from kgmodel import *
 
-
 # CRUD metoder
 
 # Create
-# pd.append, pd.concat eller df.loc[-1] = [1,2] df.index = df.index + 1 df = df.sort_index()
 def insert_foresatt(f):
-    # Ikke en god praksis å oppdaterer DataFrame ved enhver endring!
-    # DataFrame er ikke egnet som en databasesystem for webapplikasjoner.
-    # Vanligvis bruker man databaseapplikasjoner som MySql, Postgresql, sqlite3 e.l.
-    # 3 fremgangsmåter for å oppdatere DataFrame:
-    # (1) df.colums er [['a', 'b']]
-    #     df = pd.concat([pd.DataFrame([[1,2]], columns=df.columns), df], ignore_index=True)
-    # (2) df = df.append({'a': 1, 'b': 2}, ignore_index=True)
-    # (3) df.loc[-1] = [1,2]
-    #     df.index = df.index + 1
-    #     df = df.sort_index()
     global forelder
     new_id = 0
     if forelder.empty:
@@ -35,7 +23,6 @@ def insert_foresatt(f):
                                         f.foresatt_tlfnr,
                                         f.foresatt_pnr]],
                 columns=forelder.columns), forelder], ignore_index=True)
-    
     
     return forelder
 
@@ -55,18 +42,15 @@ def insert_barn(b):
     
     return barn
 
+# ------------- søknad
+
 def insert_soknad(s):
-    """[sok_id, foresatt_1, foresatt_2, barn_1, fr_barnevern, fr_sykd_familie,
-    fr_sykd_barn, fr_annet, barnehager_prioritert, sosken__i_barnehagen,
-    tidspunkt_oppstart, brutto_inntekt]
-    """
     global soknad
     new_id = 0
     if soknad.empty:
         new_id = 1
     else:
         new_id = soknad['sok_id'].max() + 1
-    
     
     # burde også sjekke for duplikater
     
@@ -80,7 +64,7 @@ def insert_soknad(s):
                                      s.fr_annet,
                                      s.barnehager_prioritert,
                                      s.sosken__i_barnehagen,
-                                     s.tidspunkt_oppstart,
+                                     s.tidspunkt_for_oppstart,
                                      s.brutto_inntekt]],
                 columns=soknad.columns), soknad], ignore_index=True)
     
@@ -113,17 +97,46 @@ def select_barn(b_pnr):
     else:
         return series.iloc[0] # returnerer kun det første elementet i series
     
-    
 # --- Skriv kode for select_soknad her
-
-
+def select_all_soknader():
+    try:
+        excel_path = r'C:\Users\truls\OneDrive\Skrivebord\IS - 114\Oblig 5\Oblig5-3C\barnehage\kgdata.xlsx'
+        
+        soknad_data = pd.read_excel(excel_path, sheet_name='soknad')
+        forelder_data = pd.read_excel(excel_path, sheet_name='foresatt')
+        
+        if 'status' not in soknad_data.columns:
+            soknad_data['status'] = 0  # Standard verdi er avslag
+        
+        soknader = []
+        for _, row in soknad_data.iterrows():
+            foresatt_1 = forelder_data[forelder_data['foresatt_id'] == row['foresatt_1']]
+            navn_foresatt_1 = foresatt_1['foresatt_navn'].values[0] if not foresatt_1.empty else 'Ikke oppgitt'
+            adresse_forelder_1 = foresatt_1['foresatt_adresse'].values[0] if not foresatt_1.empty else 'Ikke oppgitt'
+            
+            soknader.append({
+                'sok_id': row['sok_id'],
+                'foresatt_1': navn_foresatt_1,
+                'adresse_forelder_1': adresse_forelder_1,
+                'barnehager_prioritert': row['barnehager_prioritert'],
+                'brutto_inntekt': row.get('brutto_inntekt', None),
+                'fr_barnevern': row.get('fr_barnevern', None),
+                'fr_sykd_familie': row.get('fr_sykd_familie', None),
+                'fr_sykd_barn': row.get('fr_sykd_barn', None),
+                'status': row.get('status', "AVSLAG")  # Bruk status fra dataene
+            })
+        
+        print("Søknader hentet:", soknader)  # Debugging
+        return soknader
+    except Exception as e:
+        print(f"Feil ved lesing av søknader: {e}")
+        return []
+    
 # ------------------
 # Update
 
-
 # ------------------
 # Delete
-
 
 # ----- Persistent lagring ------
 def commit_all():
@@ -133,7 +146,7 @@ def commit_all():
         barnehage.to_excel(writer, sheet_name='barnehage')
         barn.to_excel(writer, sheet_name='barn')
         soknad.to_excel(writer, sheet_name='soknad')
-        
+
 # --- Diverse hjelpefunksjoner ---
 def form_to_object_soknad(sd):
     """sd - formdata for soknad, type: ImmutableMultiDict fra werkzeug.datastructures
@@ -196,6 +209,18 @@ ImmutableMultiDict([('navn_forelder_1', 'asdf'),
     
     return sok_1
 
+# Hent all data fra databasen
+def get_all_data():
+    # Les data fra alle arkene i Excel-filen
+    xls = pd.ExcelFile('kgdata.xlsx')
+    data = {}
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name)
+        print(f"Data fra ark {sheet_name}:", df.head())  # Debugging
+        data[sheet_name] = df.to_dict(orient='records')
+    print("Data hentet fra Excel:", data)  # Debugging
+    return data
+
 # Testing
 def test_df_to_object_list():
     assert barnehage.apply(lambda r: Barnehage(r['barnehage_id'],
@@ -203,4 +228,3 @@ def test_df_to_object_list():
                              r['barnehage_antall_plasser'],
                              r['barnehage_ledige_plasser']),
          axis=1).to_list()[0].barnehage_navn == "Sunshine Preschool"
-    

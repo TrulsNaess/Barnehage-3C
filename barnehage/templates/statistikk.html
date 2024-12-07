@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Statistikk{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <title>Statistikk</title>
+</head>
+<body>
+    <h1>Statistikk</h1>
+    <div>
+        {{ chart_g_html | safe }}
+    </div>
+</body>
+</html>
+{% endblock %}

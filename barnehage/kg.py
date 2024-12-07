@@ -5,7 +5,10 @@ from flask import request
 from flask import redirect
 from flask import session
 from kgmodel import (Foresatt, Barn, Soknad, Barnehage)
-from kgcontroller import (form_to_object_soknad, insert_soknad, commit_all, select_alle_barnehager)
+from kgcontroller import (form_to_object_soknad, insert_soknad, commit_all, select_alle_barnehager, get_all_data)
+import pandas as pd
+import altair as alt
+from kgcontroller import select_all_soknader
 
 app = Flask(__name__)
 app.secret_key = 'BAD_SECRET_KEY'  # nødvendig for session
@@ -74,10 +77,17 @@ def behandle():
         
         # Lagre data og vis resultat
         session['information'] = sd
+        
+        # Lagre søknaden i databasen
+        soknad = form_to_object_soknad(sd)
+        insert_soknad(soknad)
+        commit_all()  # Lagre alle data til Excel-filen
+        
         return render_template('svar.html', status=status)
     else:
-        return render_template('soknad.html')
-
+        return render_template('soknad.html')    
+    
+    # -------- Oppdatert svar --------
 @app.route('/svar')
 def svar():
     information = session['information']
@@ -123,13 +133,105 @@ def svar():
 
     return render_template('svar.html', data=information, svar=svar)
 
+
+    # --------------- Ny soknader ---------
+@app.route('/soknader')
+def soknader():
+    all_soknader = select_all_soknader()  # Henter alle søknader fra databasen
+    print("All søknader:", all_soknader)  # Debugging
+
+    ledige_plasser = select_alle_barnehager()  # Henter informasjon om ledige plasser i barnehager
+    print("Ledige plasser:", ledige_plasser)  # Debugging
+
+    for soknad in all_soknader:
+        valgt_barnehage = soknad.get('barnehager_prioritert')
+        print("Valgt barnehage:", valgt_barnehage)  # Debugging
+
+        if valgt_barnehage is None:
+            soknad['status'] = "AVSLAG: Mangler prioritert barnehage."
+            continue
+
+        barnehage_funnet = False
+        for barnehage in ledige_plasser:
+            print("Sjekker barnehage:", barnehage.barnehage_navn)  # Debugging
+            if barnehage.barnehage_navn == valgt_barnehage:
+                barnehage_funnet = True
+                print("Barnehage funnet:", barnehage.barnehage_navn)  # Debugging
+                if barnehage.barnehage_ledige_plasser > 0:
+                    brutto_inntekt = soknad.get('brutto_inntekt')
+                    print("Brutto inntekt:", brutto_inntekt)  # Debugging
+                    if brutto_inntekt is None:
+                        soknad['status'] = "AVSLAG: Mangler brutto inntekt."
+                        continue
+
+                    brutto_inntekt = int(brutto_inntekt)
+                    if brutto_inntekt >= 500000:
+                        soknad['status'] = "TILBUD"
+                    else:
+                        soknad['status'] = "AVSLAG: Inntekten er for lav for tilbud."
+                else:
+                    fortrinnsrett = soknad.get('fr_barnevern') or soknad.get('fr_sykd_familie') or soknad.get('fr_sykd_barn')
+                    print("Fortrinnsrett:", fortrinnsrett)  # Debugging
+                    if fortrinnsrett and fortrinnsrett != 'nan' and fortrinnsrett != '':
+                        soknad['status'] = "TILBUD: Fortrinnsrett"
+                    else:
+                        soknad['status'] = "AVSLAG: Ingen ledige plasser"
+                break
+
+        if not barnehage_funnet:
+            soknad['status'] = "AVSLAG: Barnehagen finnes ikke i systemet."
+
+    print("Søknader med status:", all_soknader)  # Debugging
+    return render_template('soknader.html', soknader=all_soknader)
+
+    # --------------------- Oppdatert commit
+
 @app.route('/commit')
 def commit():
-    commit_all()
-    return render_template('commit.html')
+    try:
+        all_data = get_all_data()  # Henter data fra databasen
+        if not isinstance(all_data, dict):
+            raise ValueError("Data should be a dictionary")
+        return render_template('commit.html', data=all_data)
+    except Exception as e:
+        return f"An error occurred: {e}", 500
+
+# ------------- Legge inn Oblig 3 statistikken ----------------
+
+@app.route('/statistikk')
+def statistikk():
+    # Hente dataen fra Excel
+    kgdata = pd.read_excel("ssb-barnehager-2015-2023-alder-1-2-aar.xlsm", 
+                           sheet_name="KOSandel120000", 
+                           header=3, 
+                           names=['kom', 'y15', 'y16', 'y17', 'y18', 'y19', 'y20', 'y21', 'y22', 'y23'], 
+                           na_values=['.', '..'])
+
+    # Rense data. Fjerne NAN.
+    kgdata_clean = kgdata.dropna()
+
+    # Legge til gjennomsnittlig prosent på en trygg måte
+    kgdata_clean = kgdata_clean.assign(Gjennomsnitt=kgdata_clean[['y15', 'y16', 'y17', 'y18', 'y19', 'y20', 'y21', 'y22', 'y23']].mean(axis=1))
+
+    # Diagram for prosent fra 2015 til 2023 for en valgt kommune (her bruker vi "0301 Oslo" som eksempel)
+    kommune_data = kgdata_clean[kgdata_clean['kom'] == '0301 Oslo'].copy()
+    kommune_data = kommune_data.melt(id_vars=['kom'], var_name='År', value_name='Prosent')
+    kommune_data['År'] = kommune_data['År'].str.extract(r'(\d+)').astype(float) + 2000
+
+    chart_g = alt.Chart(kommune_data).mark_line(point=True).encode(
+        x=alt.X('År:O', title='År'),
+        y=alt.Y('Prosent:Q', title='Prosent barn i barnehage'),
+        tooltip=['År', 'Prosent']
+    ).properties(
+        title='Prosent barn i ett- og toårsalderen i barnehage (2015-2023) - Oslo'
+    )
+
+    # Konverter diagrammet til HTML
+    chart_g_html = chart_g.to_html()
+
+    return render_template('statistikk.html', chart_g_html=chart_g_html)
 
 """
 Referanser
 [1] https://stackoverflow.com/questions/21668481/difference-between-render-template-and-redirect
 """
-
