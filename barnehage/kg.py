@@ -170,9 +170,9 @@ def soknader():
                     else:
                         soknad['status'] = "AVSLAG: Inntekten er for lav for tilbud."
                 else:
-                    fortrinnsrett = soknad.get('fr_barnevern') or soknad.get('fr_sykd_familie') or soknad.get('fr_sykd_barn')
-                    print("Fortrinnsrett:", fortrinnsrett)  # Debugging
-                    if fortrinnsrett and fortrinnsrett != 'nan' and fortrinnsrett != '':
+                    pririty_attributes = ["fr_barnevern", "fr_barnevern", "fr_sykd_barn"]
+                    fortrinnsrett = any(soknad.get(attr) == "on" for attr in pririty_attributes)
+                    if fortrinnsrett == True:
                         soknad['status'] = "TILBUD: Fortrinnsrett"
                     else:
                         soknad['status'] = "AVSLAG: Ingen ledige plasser"
@@ -230,6 +230,8 @@ def statistikk():
     chart_g_html = chart_g.to_html()
 
     return render_template('statistikk.html', chart_g_html=chart_g_html)
+
+app.run(port=5000)
 
 """
 Referanser
