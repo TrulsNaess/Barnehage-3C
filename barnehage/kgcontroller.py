@@ -100,7 +100,7 @@ def select_barn(b_pnr):
 # --- Skriv kode for select_soknad her
 def select_all_soknader():
     try:
-        excel_path = r'C:\Users\truls\OneDrive\Skrivebord\IS - 114\Oblig 5\Oblig5-3C\barnehage\kgdata.xlsx'
+        excel_path = r'./kgdata.xlsx'
         
         soknad_data = pd.read_excel(excel_path, sheet_name='soknad')
         forelder_data = pd.read_excel(excel_path, sheet_name='foresatt')
